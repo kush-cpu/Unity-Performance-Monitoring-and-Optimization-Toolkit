@@ -1,0 +1,66 @@
+// Assets/PerformanceToolkit/Scripts/OptimizationSuggestions.cs
+using System;
+using System.IO;
+using UnityEngine;
+using TensorFlow;
+using Debug = UnityEngine.Debug;
+
+public class OptimizationSuggestions
+{
+    private static TFGraph graph;
+    private static TFSession session;
+    private static bool modelLoaded = false;
+    private static string[] optimizationSuggestions = { "Optimize game objects and scripts", "Reduce texture sizes", "Use object pooling", "Optimize shaders", "Simplify scene geometry" };
+    private static LabelEncoder labelEncoder;
+
+    public static void LoadModel()
+    {
+        var model = File.ReadAllBytes("optimization_model.h5");
+        graph = new TFGraph();
+        graph.Import(model);
+        session = new TFSession(graph);
+        modelLoaded = true;
+
+        // Load the label encoder
+        labelEncoder = (LabelEncoder)Load("label_encoder.pkl");
+    }
+
+    public static string GetSuggestion(float frameRate, long totalMemory, long usedMemory, float cpuUsage, float gpuFrameTime)
+    {
+        if (!modelLoaded)
+        {
+            LoadModel();
+        }
+
+        // Create a tensor for the input data
+        var runner = session.GetRunner();
+        var inputTensor = new TFTensor(new float[,]
+        {
+            { frameRate, totalMemory / (1024 * 1024), usedMemory / (1024 * 1024), cpuUsage, gpuFrameTime }
+        });
+
+        runner.AddInput(graph["dense_input"][0], inputTensor);
+        runner.Fetch(graph["dense_2/Softmax"][0]);
+
+        var output = runner.Run();
+        var result = output[0].GetValue() as float[,];
+        int predictedIndex = Array.IndexOf(result, result.Max());
+
+        // Return the suggestion
+        return labelEncoder.inverse_transform(predictedIndex);
+    }
+
+    private static object Load(string fileName)
+    {
+        using (var fs = new FileStream(fileName, FileMode.Open))
+        using (var reader = new BinaryReader(fs))
+        {
+            var buffer = reader.ReadBytes((int)fs.Length);
+            var serializer = new DataContractSerializer(typeof(LabelEncoder));
+            using (var ms = new MemoryStream(buffer))
+            {
+                return serializer.ReadObject(ms);
+            }
+        }
+    }
+}
