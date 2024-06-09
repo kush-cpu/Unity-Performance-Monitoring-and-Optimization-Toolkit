@@ -1,7 +1,3 @@
-Sure! Here is a detailed GitHub repository README for your performance monitoring and optimization toolkit:
-
----
-
 # Unity Performance Monitoring and Optimization Toolkit
 
 ## Description
