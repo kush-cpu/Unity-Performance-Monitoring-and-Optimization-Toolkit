@@ -99,5 +99,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
 ---
-
-This README provides a clear and detailed guide for users to install, set up, and use the performance monitoring and optimization toolkit in their Unity projects.
